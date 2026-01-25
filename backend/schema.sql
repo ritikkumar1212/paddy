@@ -1,70 +1,55 @@
--- =============================
--- CLEAN RESET (safe notices)
--- =============================
-DROP TABLE IF EXISTS race_runners CASCADE;
-DROP TABLE IF EXISTS race_results CASCADE;
-DROP TABLE IF EXISTS races CASCADE;
-
--- =============================
--- RACES
--- =============================
 CREATE TABLE races (
-  id BIGSERIAL PRIMARY KEY,
+  id SERIAL PRIMARY KEY,
 
-  race_time_ist VARCHAR(10) NOT NULL,
-  race_time_uk  VARCHAR(10) NOT NULL,
+  race_time_ist TEXT NOT NULL,
+  race_time_uk TEXT NOT NULL,
 
-  runner_count INT NOT NULL CHECK (runner_count BETWEEN 1 AND 30),
+  runner_count INTEGER NOT NULL,
 
-  scraped_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-  -- ✅ manually set by backend
-  scraped_date DATE NOT NULL,
+  scraped_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  scraped_date DATE NOT NULL DEFAULT CURRENT_DATE,
 
   race_signature TEXT,
 
-  -- ✅ valid unique constraint
-  UNIQUE (race_time_uk, scraped_date)
+  created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- =============================
--- RACE RUNNERS
--- =============================
+
 CREATE TABLE race_runners (
-  id BIGSERIAL PRIMARY KEY,
+  id SERIAL PRIMARY KEY,
 
-  race_id BIGINT NOT NULL REFERENCES races(id) ON DELETE CASCADE,
+  race_id INTEGER NOT NULL REFERENCES races(id) ON DELETE CASCADE,
 
-  runner_number INT NOT NULL CHECK (runner_number BETWEEN 1 AND 30),
-  horse_name TEXT NOT NULL,
+  runner_number INTEGER NOT NULL,
+  horse_name TEXT,
   jockey_name TEXT,
   odds TEXT,
 
-  UNIQUE (race_id, runner_number)
+  created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- =============================
--- RACE RESULTS
--- =============================
+
 CREATE TABLE race_results (
-  id BIGSERIAL PRIMARY KEY,
+  id SERIAL PRIMARY KEY,
 
-  race_time_capture TEXT NOT NULL,
-  video_race_time_uk VARCHAR(10),
+  race_time_capture TEXT,
 
-  position INT NOT NULL CHECK (position BETWEEN 1 AND 4),
-  horse_number INT,
+  video_race_time_uk TEXT,
+
+  position INTEGER,
+  horse_number INTEGER,
 
   raw_text TEXT,
   full_line TEXT,
 
-  scraped_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  scraped_at TIMESTAMPTZ DEFAULT now()
 );
 
--- =============================
--- INDEXES
--- =============================
-CREATE INDEX idx_races_latest ON races(scraped_at DESC);
-CREATE INDEX idx_race_signature ON races(race_signature);
-CREATE INDEX idx_runners_race ON race_runners(race_id);
-CREATE INDEX idx_results_video_time ON race_results(video_race_time_uk);
+
+CREATE INDEX idx_races_scraped_at ON races(scraped_at DESC);
+
+CREATE INDEX idx_runners_race_id ON race_runners(race_id);
+
+CREATE INDEX idx_results_scraped_at ON race_results(scraped_at DESC);
+
+CREATE INDEX idx_results_race_time_capture ON race_results(race_time_capture);
