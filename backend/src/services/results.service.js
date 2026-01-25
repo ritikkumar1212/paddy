@@ -1,13 +1,34 @@
 const pool = require("../config/db");
 
 async function insertResults(payload) {
-  const { race_id, race_time_capture, video_race_time_uk, results, scraped_at } = payload;
+  const { race_time_capture, video_race_time_uk, results, scraped_at } = payload;
 
-  if (!race_id || !Array.isArray(results)) {
-    throw new Error("Invalid payload for results insert");
+  if (!Array.isArray(results) || results.length === 0) {
+    throw new Error("Invalid results payload");
   }
 
   const scrapedAt = scraped_at ? new Date(scraped_at) : new Date();
+
+  // -----------------------------------
+  // Find latest matching race by UK time
+  // -----------------------------------
+  const raceLookup = await pool.query(
+    `
+    SELECT id
+    FROM races
+    WHERE race_time_uk = $1
+    ORDER BY scraped_at DESC
+    LIMIT 1
+    `,
+    [video_race_time_uk]
+  );
+
+  if (!raceLookup.rows.length) {
+    console.warn("⚠️ No race found for results:", video_race_time_uk);
+    return 0;
+  }
+
+  const raceId = raceLookup.rows[0].id;
 
   let inserted = 0;
 
@@ -27,8 +48,8 @@ async function insertResults(payload) {
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
       `,
       [
-        race_id,
-        race_time_capture,
+        raceId,
+        race_time_capture ?? null,
         video_race_time_uk ?? null,
         Number(r.position),
         r.horse_number ? Number(r.horse_number) : null,
