@@ -2,55 +2,43 @@ const pool = require("../config/db");
 const { createRaceSignature } = require("../utils/signature");
 
 /**
- * Insert a race + all its runners.
- *
- * Expected payload from scraper.py:
- * {
- *   race_time: "01:32",
- *   race_time_uk: "20:02",
- *   runner_count: 15,
- *   scraped_at: "2026-01-21 17:30:22"  (optional)
- *   runners: [
- *     { number: 1, name: "...", jockey: "...", odds: "..." },
- *     ...
- *   ]
- * }
+ * Insert / update race + runners
  */
 async function insertRace(payload) {
   const { race_time, race_time_uk, runner_count, scraped_at, runners } = payload;
 
   // ----------------------------
-  // Basic validations
+  // Validation
   // ----------------------------
   if (!race_time || typeof race_time !== "string") {
     throw new Error("race_time is required");
   }
+
   if (!race_time_uk || typeof race_time_uk !== "string") {
     throw new Error("race_time_uk is required");
   }
+
   if (!runner_count || isNaN(Number(runner_count))) {
-    throw new Error("runner_count must be a number");
+    throw new Error("runner_count must be numeric");
   }
+
   if (!Array.isArray(runners) || runners.length === 0) {
-    throw new Error("runners array is required");
+    throw new Error("runners array missing");
   }
 
   // ----------------------------
-  // Date/time handling
+  // Time handling
   // ----------------------------
-  // scraped_at might come as:
-  // "2026-01-21 17:30:22" (from python) OR ISO string
-  // safest: always convert to JS Date
   const scrapedAt = scraped_at ? new Date(scraped_at) : new Date();
+
   if (isNaN(scrapedAt.getTime())) {
-    throw new Error("scraped_at is invalid date format");
+    throw new Error("Invalid scraped_at");
   }
 
-  // for unique key grouping per-day
-  const scrapedDate = scrapedAt.toISOString().slice(0, 10); // YYYY-MM-DD
+  const scrapedDate = scrapedAt.toISOString().slice(0, 10);
 
   // ----------------------------
-  // Create race signature for duplicate detection
+  // Signature (duplicate detection)
   // ----------------------------
   const raceSignature = createRaceSignature(runners);
 
@@ -60,7 +48,7 @@ async function insertRace(payload) {
     await client.query("BEGIN");
 
     // ----------------------------
-    // Insert race
+    // Insert / update race
     // ----------------------------
     const raceInsert = await client.query(
       `
@@ -94,18 +82,25 @@ async function insertRace(payload) {
     const raceId = raceRow.id;
 
     // ----------------------------
+    // Clear previous runners
+    // ----------------------------
+    await client.query(
+      `DELETE FROM race_runners WHERE race_id = $1`,
+      [raceId]
+    );
+
+    // ----------------------------
     // Insert runners
     // ----------------------------
     for (const r of runners) {
-      // validate runner number
       const runnerNumber = Number(r.number);
       if (!runnerNumber || isNaN(runnerNumber)) continue;
 
       const horseName = r.name ? String(r.name).trim() : "";
+      if (!horseName) continue;
+
       const jockeyName = r.jockey ? String(r.jockey).trim() : null;
       const odds = r.odds ? String(r.odds).trim() : null;
-
-      if (!horseName) continue;
 
       await client.query(
         `
@@ -117,11 +112,6 @@ async function insertRace(payload) {
           odds
         )
         VALUES ($1,$2,$3,$4,$5)
-        ON CONFLICT (race_id, runner_number)
-        DO UPDATE SET
-          horse_name = EXCLUDED.horse_name,
-          jockey_name = EXCLUDED.jockey_name,
-          odds = EXCLUDED.odds
         `,
         [raceId, runnerNumber, horseName, jockeyName, odds]
       );
@@ -129,6 +119,7 @@ async function insertRace(payload) {
 
     await client.query("COMMIT");
     return raceRow;
+
   } catch (err) {
     await client.query("ROLLBACK");
     throw err;
