@@ -1,0 +1,26 @@
+# Node
+node_modules
+npm-debug.log*
+
+# Env files
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Vite
+dist/
+
+# Screenshots / OCR junk
+screenshots/
+
+# CSV / Excel outputs
+*.csv
+*.xlsx
+
+# OS
+.DS_Store
+Thumbs.db
+

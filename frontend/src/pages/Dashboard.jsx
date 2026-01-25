@@ -1,0 +1,102 @@
+import { useEffect, useState } from "react";
+import { api } from "../api/api";
+import RunnersTable from "../components/RunnersTable";
+import ResultsCard from "../components/ResultsCard";
+
+export default function Dashboard() {
+  const [data, setData] = useState(null);
+
+  useEffect(() => {
+    const fetchLive = async () => {
+      try {
+        const res = await api.get("/api/live/latest");
+        setData(res.data.data);
+      } catch (err) {
+        console.error("Failed to fetch live race");
+      }
+    };
+
+    fetchLive();
+    const interval = setInterval(fetchLive, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  if (!data) return <p style={{ padding: 20 }}>Loading…</p>;
+
+  return (
+    <div style={{ padding: 30 }}>
+      <h1 style={{ marginBottom: 25 }}>🏇 Paddy Virtual Racing</h1>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "2.2fr 1fr",
+          gap: 24,
+          alignItems: "start"
+        }}
+      >
+        {/* LEFT */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+          <RaceInfo race={data.race} />
+          <RunnersTable
+            runners={data.runners}
+            results={data.results}
+          />
+        </div>
+
+        {/* RIGHT */}
+        <ResultsCard
+          results={data.results}
+          runners={data.runners}
+        />
+      </div>
+    </div>
+  );
+}
+
+function RaceInfo({ race }) {
+  return (
+    <div
+      style={{
+        background: "#020617",
+        border: "1px solid #1f2937",
+        borderRadius: 14,
+        padding: 20
+      }}
+    >
+      <h3 style={{ marginBottom: 12 }}>Race Details</h3>
+
+      <InfoRow label="Race Time (IST)" value={race.race_time_ist} />
+      <InfoRow label="Race Time (UK)" value={race.race_time_uk} />
+      <InfoRow label="Runners" value={race.runner_count} />
+      <InfoRow
+        label="Scraped At"
+        value={new Date(race.scraped_at).toLocaleString()}
+      />
+
+      <hr style={{ borderColor: "#1f2937", margin: "14px 0" }} />
+
+      <InfoRow label="Duplicate Count" value={race.duplicate_count} />
+      <InfoRow
+        label="Last Seen"
+        value={race.last_seen || "First time"}
+      />
+    </div>
+  );
+}
+
+function InfoRow({ label, value }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        marginBottom: 6,
+        fontSize: 14
+      }}
+    >
+      <span style={{ color: "#9ca3af" }}>{label}</span>
+      <span>{value}</span>
+    </div>
+  );
+}

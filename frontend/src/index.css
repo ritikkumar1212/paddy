@@ -1,0 +1,40 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Inter", system-ui, sans-serif;
+  background: radial-gradient(
+    circle at top left,
+    #1f2933,
+    #0f172a 60%
+  );
+  color: #e5e7eb;
+}
+
+h1, h2, h3 {
+  margin: 0;
+  font-weight: 600;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th, td {
+  padding: 10px 12px;
+  text-align: left;
+}
+
+th {
+  background: #111827;
+  color: #9ca3af;
+  font-size: 13px;
+  text-transform: uppercase;
+}
+
+td {
+  border-bottom: 1px solid #1f2937;
+}
