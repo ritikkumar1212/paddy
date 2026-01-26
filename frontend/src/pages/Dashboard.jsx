@@ -12,7 +12,7 @@ export default function Dashboard() {
         const res = await api.get("/api/live/latest");
         setData(res.data.data);
       } catch (err) {
-        console.error("Failed to fetch live race");
+        console.error("Failed to fetch live race", err);
       }
     };
 
@@ -21,7 +21,7 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  if (!data) return <p style={{ padding: 20 }}>Loading…</p>;
+  if (!data || !data.current_race) return <p style={{ padding: 20 }}>Loading…</p>;
 
   return (
     <div style={{ padding: 30 }}>
@@ -35,24 +35,39 @@ export default function Dashboard() {
           alignItems: "start"
         }}
       >
-        {/* LEFT */}
+        {/* LEFT SIDE */}
         <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-          <RaceInfo race={data.race} />
+          <RaceInfo race={data.current_race} />
+
+          <div
+            style={{
+              background: "#020617",
+              border: "1px solid #1f2937",
+              borderRadius: 14,
+              padding: 16
+            }}
+          >
+            <InfoRow label="Duplicate Count" value={data.duplicate_count} />
+            <InfoRow label="Last Seen" value={data.last_seen || "First time"} />
+          </div>
+
           <RunnersTable
             runners={data.runners}
-            results={data.results}
+            results={data.last_results}
           />
         </div>
 
-        {/* RIGHT */}
+        {/* RIGHT SIDE */}
         <ResultsCard
-          results={data.results}
+          results={data.last_results}
           runners={data.runners}
         />
       </div>
     </div>
   );
 }
+
+/* ---------------- RACE INFO ---------------- */
 
 function RaceInfo({ race }) {
   return (
@@ -64,7 +79,7 @@ function RaceInfo({ race }) {
         padding: 20
       }}
     >
-      <h3 style={{ marginBottom: 12 }}>Race Details</h3>
+      <h3 style={{ marginBottom: 12 }}>Current Race</h3>
 
       <InfoRow label="Race Time (IST)" value={race.race_time_ist} />
       <InfoRow label="Race Time (UK)" value={race.race_time_uk} />
@@ -73,17 +88,11 @@ function RaceInfo({ race }) {
         label="Scraped At"
         value={new Date(race.scraped_at).toLocaleString()}
       />
-
-      <hr style={{ borderColor: "#1f2937", margin: "14px 0" }} />
-
-      <InfoRow label="Duplicate Count" value={race.duplicate_count} />
-      <InfoRow
-        label="Last Seen"
-        value={race.last_seen || "First time"}
-      />
     </div>
   );
 }
+
+/* ---------------- INFO ROW ---------------- */
 
 function InfoRow({ label, value }) {
   return (
