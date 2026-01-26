@@ -12,23 +12,21 @@ async function insertResults(payload) {
   // -----------------------------------
   // Find latest matching race by UK time
   // -----------------------------------
-  const raceLookup = await pool.query(
-`
+  const raceLookup = await pool.query(`
 SELECT id
 FROM races
-WHERE scraped_at <= $1
 ORDER BY scraped_at DESC
+OFFSET 1
 LIMIT 1
-`,
-[ scraped_at ]
-);
+`);
 
 if (!raceLookup.rows.length) {
-  console.warn("No race found for OCR timestamp:", scraped_at);
+  console.warn("No previous race found");
   return 0;
 }
 
 const raceId = raceLookup.rows[0].id;
+
 
 
   let inserted = 0;
