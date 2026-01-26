@@ -13,23 +13,23 @@ async function insertResults(payload) {
   // Find latest matching race by UK time
   // -----------------------------------
   const raceLookup = await pool.query(
-    `
-      SELECT id
-  FROM races
-  WHERE race_time_uk = $1
-  AND scraped_at >= NOW() - INTERVAL '5 minutes'
-  ORDER BY scraped_at ASC
-  LIMIT 1
-    `,
-    [video_race_time_uk]
-  );
+`
+SELECT id
+FROM races
+WHERE scraped_at <= $1
+ORDER BY scraped_at DESC
+LIMIT 1
+`,
+[ scraped_at ]
+);
 
-  if (!raceLookup.rows.length) {
-    console.warn("⚠️ No race found for results:", video_race_time_uk);
-    return 0;
-  }
+if (!raceLookup.rows.length) {
+  console.warn("No race found for OCR timestamp:", scraped_at);
+  return 0;
+}
 
-  const raceId = raceLookup.rows[0].id;
+const raceId = raceLookup.rows[0].id;
+
 
   let inserted = 0;
 
