@@ -15,10 +15,11 @@ async function insertResults(payload) {
   const raceLookup = await pool.query(
     `
     SELECT id
-    FROM races
-    WHERE race_time_uk = $1
-    ORDER BY scraped_at DESC
-    LIMIT 1
+      FROM races
+      WHERE race_time_uk = $1
+      AND scraped_at <= NOW()
+      ORDER BY scraped_at DESC
+      LIMIT 1
     `,
     [video_race_time_uk]
   );
