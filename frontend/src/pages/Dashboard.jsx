@@ -109,3 +109,14 @@ function InfoRow({ label, value }) {
     </div>
   );
 }
+<a
+  href="https://YOUR_BACKEND/api/export/excel"
+  style={{
+    color: "white",
+    background: "#2563eb",
+    padding: "8px 14px",
+    borderRadius: 6
+  }}
+>
+⬇ Download Excel
+</a>
