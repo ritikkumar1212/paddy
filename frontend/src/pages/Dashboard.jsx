@@ -25,7 +25,26 @@ export default function Dashboard() {
 
   return (
     <div style={{ padding: 30 }}>
-      <h1 style={{ marginBottom: 25 }}>🏇 Paddy Virtual Racing</h1>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 25 }}>
+  <h1>🏇 Paddy Virtual Racing</h1>
+
+  <a
+    href="https://paddy-v3go.onrender.com/api/export/excel"
+    target="_blank"
+    rel="noopener noreferrer"
+    style={{
+      color: "white",
+      background: "#2563eb",
+      padding: "8px 14px",
+      borderRadius: 6,
+      textDecoration: "none",
+      height: "fit-content"
+    }}
+  >
+    ⬇ Download Excel
+  </a>
+</div>
+
 
       <div
         style={{
@@ -109,14 +128,3 @@ function InfoRow({ label, value }) {
     </div>
   );
 }
-<a
-  href="https://YOUR_BACKEND/api/export/excel"
-  style={{
-    color: "white",
-    background: "#2563eb",
-    padding: "8px 14px",
-    borderRadius: 6
-  }}
->
-⬇ Download Excel
-</a>
