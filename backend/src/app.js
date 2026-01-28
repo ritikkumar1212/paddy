@@ -4,6 +4,7 @@ const cors = require("cors");
 const racesRoutes = require("./routes/races.routes");
 const resultsRoutes = require("./routes/results.routes");
 const liveRoutes = require("./routes/live.routes");
+const exportRoutes = require("./routes/export.routes");
 
 const errorMiddleware = require("./middlewares/error.middleware");
 
@@ -23,6 +24,8 @@ app.get("/health", (req, res) => {
 app.use("/api/races", racesRoutes);
 app.use("/api/results", resultsRoutes);
 app.use("/api/live", liveRoutes);
+app.use("/api/export", exportRoutes);
+
 
 app.use(errorMiddleware);
 
