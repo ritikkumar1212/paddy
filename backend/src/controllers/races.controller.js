@@ -9,4 +9,13 @@ async function insertRace(req, res, next) {
   }
 }
 
-module.exports = { insertRace };
+async function getDuplicates(req, res) {
+  const raceId = req.params.id;
+
+  const rows = await getDuplicateRaces(raceId);
+
+  res.json({ success: true, data: rows });
+}
+
+module.exports = { insertRace, getDuplicates };
+

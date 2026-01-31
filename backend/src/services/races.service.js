@@ -128,4 +128,27 @@ async function insertRace(payload) {
   }
 }
 
-module.exports = { insertRace };
+async function getDuplicateRaces(raceId) {
+  const sigRes = await pool.query(
+    `SELECT race_signature FROM races WHERE id=$1`,
+    [raceId]
+  );
+
+  if (!sigRes.rows.length) return [];
+
+  const signature = sigRes.rows[0].race_signature;
+
+  const dupes = await pool.query(
+    `
+    SELECT id, race_time_uk, scraped_at, runner_count
+    FROM races
+    WHERE race_signature = $1
+    ORDER BY scraped_at DESC
+    `,
+    [signature]
+  );
+
+  return dupes.rows;
+}
+
+module.exports = { insertRace, getDuplicateRaces };

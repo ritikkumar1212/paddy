@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { api } from "../api/api";
 import RunnersTable from "../components/RunnersTable";
 import ResultsCard from "../components/ResultsCard";
+const [dupes, setDupes] = useState([]);
+const [showDupes, setShowDupes] = useState(false);
+
 
 export default function Dashboard() {
   const [data, setData] = useState(null);
@@ -67,6 +70,28 @@ export default function Dashboard() {
             }}
           >
             <InfoRow label="Duplicate Count" value={data.duplicate_count} />
+
+              {data.duplicate_count >= 2 && (
+                <button
+                  onClick={async () => {
+                    const res = await api.get(`/api/races/duplicates/${data.current_race.id}`);
+                    setDupes(res.data.data);
+                    setShowDupes(true);
+                  }}
+                  style={{
+                    marginTop: 10,
+                    background: "#2563eb",
+                    color: "white",
+                    padding: "6px 12px",
+                    borderRadius: 6,
+                    border: "none",
+                    cursor: "pointer"
+                  }}
+                >
+                  View Past Duplicate Races
+                </button>
+              )}
+
             <InfoRow label="Last Seen" value={data.last_seen || "First time"} />
           </div>
 
@@ -128,3 +153,46 @@ function InfoRow({ label, value }) {
     </div>
   );
 }
+{showDupes && (
+  <div
+    style={{
+      position: "fixed",
+      inset: 0,
+      background: "rgba(0,0,0,.6)",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center"
+    }}
+  >
+    <div
+      style={{
+        background: "#020617",
+        padding: 20,
+        borderRadius: 12,
+        width: 400
+      }}
+    >
+      <h3>Past Duplicate Races</h3>
+
+      {dupes.map(d => (
+        <div key={d.id} style={{ padding: 8 }}>
+          Race #{d.id} – {d.race_time_uk} –{" "}
+          {new Date(d.scraped_at).toLocaleString()}
+        </div>
+      ))}
+
+      <button
+        onClick={() => setShowDupes(false)}
+        style={{
+          marginTop: 10,
+          background: "#ef4444",
+          color: "white",
+          padding: "6px 12px",
+          borderRadius: 6
+        }}
+      >
+        Close
+      </button>
+    </div>
+  </div>
+)}
