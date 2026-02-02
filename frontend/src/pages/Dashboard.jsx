@@ -107,6 +107,7 @@ export default function Dashboard() {
 
           {/* RIGHT */}
           <ResultsCard results={data.last_results} runners={data.runners} />
+          <UpcomingRaces />
         </div>
       </div>
 

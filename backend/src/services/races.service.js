@@ -151,4 +151,48 @@ async function getDuplicateRaces(raceId) {
   return dupes.rows;
 }
 
-module.exports = { insertRace, getDuplicateRaces };
+async function getUpcomingRaces() {
+  const res = await pool.query(`
+    SELECT id, race_time_ist, race_time_uk, runner_count
+    FROM races
+    WHERE scraped_date = CURRENT_DATE
+      AND to_timestamp(
+            scraped_date || ' ' ||
+            substring(race_time_ist from '([0-9]{2}:[0-9]{2})'),
+            'YYYY-MM-DD HH24:MI'
+          ) > NOW() AT TIME ZONE 'Asia/Kolkata'
+    ORDER BY race_time_ist
+  `);
+
+  return res.rows;
+}
+async function getRaceDetails(id) {
+
+  const race = await pool.query(`SELECT * FROM races WHERE id=$1`,[id]);
+  const runners = await pool.query(`SELECT * FROM race_runners WHERE race_id=$1`,[id]);
+
+  const signature = race.rows[0].race_signature;
+
+  const history = await pool.query(`
+    SELECT r.id, r.scraped_at,
+      (SELECT horse_name
+       FROM race_runners rr
+       JOIN race_results res
+         ON res.horse_number = rr.runner_number
+        AND rr.race_id = r.id
+       WHERE res.position = 1
+       LIMIT 1) AS winner
+    FROM races r
+    WHERE race_signature = $1
+      AND r.id <> $2
+    ORDER BY scraped_at DESC
+  `,[signature,id]);
+
+  return {
+    race: race.rows[0],
+    runners: runners.rows,
+    history: history.rows
+  };
+}
+
+module.exports = { insertRace, getDuplicateRaces, getUpcomingRaces, getRaceDetails };

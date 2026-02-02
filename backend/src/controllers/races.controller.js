@@ -16,6 +16,22 @@ async function getDuplicates(req, res) {
 
   res.json({ success: true, data: rows });
 }
+async function getUpcoming(req, res) {
+  try {
+    const races = await raceService.getUpcomingRaces();
+    res.json({ data: races });
+  } catch (e) {
+    res.status(500).json({ error: "Failed to load upcoming races" });
+  }
+}
+async function getRaceDetails(req,res){
+  try{
+    const data = await raceService.getRaceDetails(req.params.id);
+    res.json({data});
+  }catch(e){
+    res.status(500).json({error:"Failed"});
+  }
+}
 
-module.exports = { insertRace, getDuplicates };
+module.exports = { insertRace, getDuplicates, getUpcoming, getRaceDetails };
 
