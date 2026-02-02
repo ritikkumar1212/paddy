@@ -10,13 +10,22 @@ export default function Dashboard() {
 
   useEffect(() => {
     const fetchLive = async () => {
-      try {
-        const res = await api.get("/api/live/latest");
-        setData(res.data.data);
-      } catch (err) {
-        console.error("Failed to fetch live race", err);
-      }
-    };
+  try {
+    const res = await api.get("/api/live/latest");
+    const payload = res.data.data;
+
+    setData({
+      current_race: payload.current_race,
+      runners: payload.runners,
+      last_results: payload.last_results ?? [],   // HARD RESET
+      duplicate_count: payload.duplicate_count,
+      last_seen: payload.last_seen
+    });
+
+  } catch (err) {
+    console.error("Failed to fetch live race", err);
+  }
+};
 
     fetchLive();
     const interval = setInterval(fetchLive, 5000);
