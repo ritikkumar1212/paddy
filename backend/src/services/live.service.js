@@ -42,31 +42,31 @@ async function getLatestRaceLive() {
   }
 
   const currentRace = raceRes.rows[0];
-  // ================= UPCOMING RACES =================
+  /// ================= UPCOMING RACES (MINIMAL FIX) =================
 
 const upcomingRes = await pool.query(`
-  SELECT id, race_time_ist, race_time_uk, runner_count,
-    (
-      to_timestamp(
-        scraped_date || ' ' ||
-        substring(race_time_ist from '([0-9]{2}:[0-9]{2})'),
-        'YYYY-MM-DD HH24:MI'
-      ) AT TIME ZONE 'Asia/Kolkata'
-    ) AS race_ts
+  SELECT id, race_time_ist, race_time_uk, runner_count
   FROM races
-  WHERE substring(race_time_ist from '([0-9]{2}:[0-9]{2})') IS NOT NULL
-    AND (
-      to_timestamp(
-        scraped_date || ' ' ||
-        substring(race_time_ist from '([0-9]{2}:[0-9]{2})'),
-        'YYYY-MM-DD HH24:MI'
-      ) AT TIME ZONE 'Asia/Kolkata'
-    ) > $1
-  ORDER BY race_ts
+  WHERE
+    to_timestamp(
+      scraped_date || ' ' ||
+      substring(race_time_ist from '([0-9]{2}:[0-9]{2})'),
+      'YYYY-MM-DD HH24:MI'
+    ) AT TIME ZONE 'Asia/Kolkata'
+    >
+    to_timestamp(
+      $1::date || ' ' ||
+      substring($2 from '([0-9]{2}:[0-9]{2})'),
+      'YYYY-MM-DD HH24:MI'
+    ) AT TIME ZONE 'Asia/Kolkata'
+  ORDER BY race_time_ist
   LIMIT 10
-`, [currentRace.race_ts]);
+`, [
+  currentRace.scraped_date,
+  currentRace.race_time_ist
+]);
 
-  const upcoming = upcomingRes.rows;
+const upcoming = upcomingRes.rows;
 
   // ================= RUNNERS =================
 
