@@ -2,11 +2,19 @@ const pool = require("../config/db");
 
 async function getLatestRaceLive() {
 
-  // 1️⃣ Current race (X)
+  // ================================
+  // 1️⃣ CURRENT RACE (by IST clock)
+  // ================================
+
   const currentRaceRes = await pool.query(`
-    SELECT *
+    SELECT *,
+    (scraped_date + race_time_ist::time) AS race_ts
     FROM races
-    ORDER BY scraped_at DESC
+    WHERE scraped_date = CURRENT_DATE
+    ORDER BY ABS(EXTRACT(EPOCH FROM (
+      (scraped_date + race_time_ist::time) -
+      (NOW() AT TIME ZONE 'Asia/Kolkata')
+    )))
     LIMIT 1
   `);
 
@@ -22,45 +30,59 @@ async function getLatestRaceLive() {
 
   const currentRace = currentRaceRes.rows[0];
 
-  // 2️⃣ Runners for current race X
+  // ================================
+  // 2️⃣ RUNNERS FOR CURRENT RACE
+  // ================================
+
   const runnersRes = await pool.query(`
     SELECT runner_number, horse_name, jockey_name, odds
     FROM race_runners
     WHERE race_id = $1
     ORDER BY runner_number
-  `,[currentRace.id]);
+  `, [currentRace.id]);
 
-  // 3️⃣ Previous race X-1
+  // ================================
+  // 3️⃣ PREVIOUS RACE (X-1)
+  // ================================
+
   const prevRaceRes = await pool.query(`
-    SELECT *
+    SELECT *,
+    (scraped_date + race_time_ist::time) AS race_ts
     FROM races
-    ORDER BY scraped_at DESC
-    OFFSET 1
+    WHERE scraped_date = CURRENT_DATE
+      AND (scraped_date + race_time_ist::time) < $1
+    ORDER BY race_ts DESC
     LIMIT 1
-  `);
+  `, [currentRace.race_ts]);
 
   let lastResults = [];
 
   if (prevRaceRes.rows.length) {
     const prevRace = prevRaceRes.rows[0];
 
-    // 4️⃣ Results for X-1 ONLY
+    // ================================
+    // 4️⃣ RESULTS ONLY FOR X-1
+    // ================================
+
     const resultsRes = await pool.query(`
       SELECT position, horse_number, raw_text
       FROM race_results
       WHERE race_id = $1
       ORDER BY position
-    `,[prevRace.id]);
+    `, [prevRace.id]);
 
     lastResults = resultsRes.rows;
   }
 
-  // 5️⃣ Duplicate detection for current race
+  // ================================
+  // 5️⃣ DUPLICATE DETECTION
+  // ================================
+
   const dupCountRes = await pool.query(`
     SELECT COUNT(*)::int AS count
     FROM races
     WHERE race_signature = $1
-  `,[currentRace.race_signature]);
+  `, [currentRace.race_signature]);
 
   const lastSeenRes = await pool.query(`
     SELECT scraped_at
@@ -69,7 +91,7 @@ async function getLatestRaceLive() {
       AND scraped_at < $2
     ORDER BY scraped_at DESC
     LIMIT 1
-  `,[currentRace.race_signature, currentRace.scraped_at]);
+  `, [currentRace.race_signature, currentRace.scraped_at]);
 
   return {
     current_race: currentRace,
