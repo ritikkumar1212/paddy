@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api/api";
 import RunnersTable from "../components/RunnersTable";
 import ResultsCard from "../components/ResultsCard";
+import UpcomingRaces from "../components/UpcomingRaces";
 
 export default function Dashboard() {
   const [data, setData] = useState(null);
