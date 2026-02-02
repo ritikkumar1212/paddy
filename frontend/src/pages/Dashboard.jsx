@@ -109,7 +109,7 @@ export default function Dashboard() {
           {/* RIGHT */}
           <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
             <ResultsCard results={data.last_results} runners={data.runners} />
-            <UpcomingRaces />
+            <UpcomingRaces upcoming={data.upcoming} />
           </div>
         </div>
       </div>
