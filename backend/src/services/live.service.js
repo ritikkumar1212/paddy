@@ -12,7 +12,7 @@ async function getLatestRaceLive() {
     FROM races
     WHERE scraped_date = CURRENT_DATE
       AND (scraped_date + race_time_ist::time)
-          <= (NOW() AT TIME ZONE 'Asia/Kolkata') + INTERVAL '15 seconds'
+          <= (NOW() AT TIME ZONE 'Asia/Kolkata') + INTERVAL '5 seconds'
     ORDER BY race_ts DESC
     LIMIT 1
   `);
