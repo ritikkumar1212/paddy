@@ -2,7 +2,7 @@ const pool = require("../config/db");
 
 async function getLatestRaceLive() {
 
-  // ================= CURRENT IST =================
+  // ================= IST NOW =================
   const nowRes = await pool.query(`
     SELECT NOW() AT TIME ZONE 'Asia/Kolkata' AS ist_now
   `);
@@ -10,14 +10,24 @@ async function getLatestRaceLive() {
   const istNow = nowRes.rows[0].ist_now;
 
   // ================= CURRENT RACE =================
+  // Extract HH:MM safely using regex
 
   const raceRes = await pool.query(`
-    SELECT *
+    SELECT *,
+      to_timestamp(
+        scraped_date || ' ' ||
+        substring(race_time_ist from '([0-9]{2}:[0-9]{2})'),
+        'YYYY-MM-DD HH24:MI'
+      ) AS race_ts
     FROM races
     WHERE scraped_date = CURRENT_DATE
-      AND to_timestamp(scraped_date || ' ' || race_time_ist, 'YYYY-MM-DD HH24:MI')
-          <= $1
-    ORDER BY to_timestamp(scraped_date || ' ' || race_time_ist, 'YYYY-MM-DD HH24:MI') DESC
+      AND substring(race_time_ist from '([0-9]{2}:[0-9]{2})') IS NOT NULL
+      AND to_timestamp(
+            scraped_date || ' ' ||
+            substring(race_time_ist from '([0-9]{2}:[0-9]{2})'),
+            'YYYY-MM-DD HH24:MI'
+          ) <= $1
+    ORDER BY race_ts DESC
     LIMIT 1
   `,[istNow]);
 
@@ -42,26 +52,21 @@ async function getLatestRaceLive() {
     ORDER BY runner_number
   `,[currentRace.id]);
 
-  // ================= RESULT GATE (90s) =================
-
-  const raceTsRes = await pool.query(`
-    SELECT to_timestamp($1 || ' ' || $2, 'YYYY-MM-DD HH24:MI') AS race_ts
-  `,[currentRace.scraped_date, currentRace.race_time_ist]);
-
-  const raceTs = raceTsRes.rows[0].race_ts;
+  // ================= RESULT GATE =================
+  // Show result ONLY after 90 seconds
 
   let lastResults = [];
 
-  if (istNow > new Date(raceTs.getTime() + 90000)) {
+  if (istNow > new Date(currentRace.race_ts.getTime() + 90000)) {
 
-    const resultsRes = await pool.query(`
+    const resultRes = await pool.query(`
       SELECT position, horse_number, raw_text
       FROM race_results
       WHERE video_race_time_uk = $1
       ORDER BY position
     `,[currentRace.race_time_uk]);
 
-    lastResults = resultsRes.rows;
+    lastResults = resultRes.rows;
   }
 
   // ================= DUPLICATES =================
