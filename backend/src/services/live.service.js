@@ -41,7 +41,7 @@ async function getLatestRaceLive() {
   `, [currentRace.id]);
 
   // ===============================
-  // 3️⃣ CHECK RESULTS FOR SAME RACE
+  // 3️⃣ RESULTS FOR CURRENT RACE (UK TIME)
   // ===============================
 
   let lastResults = [];
@@ -49,19 +49,18 @@ async function getLatestRaceLive() {
   const currentResults = await pool.query(`
     SELECT position, horse_number, raw_text
     FROM race_results
-    WHERE race_id = $1
+    WHERE video_race_time_uk = $1
     ORDER BY position
-  `, [currentRace.id]);
+  `, [currentRace.race_time_uk]);
 
   if (currentResults.rows.length) {
 
-    // ✅ Result already available for current race
     lastResults = currentResults.rows;
 
   } else {
 
     // ===============================
-    // 4️⃣ FALLBACK TO PREVIOUS RACE
+    // 4️⃣ FALLBACK → PREVIOUS RACE BY IST
     // ===============================
 
     const prevRaceRes = await pool.query(`
@@ -75,14 +74,15 @@ async function getLatestRaceLive() {
     `, [currentRace.race_ts]);
 
     if (prevRaceRes.rows.length) {
+
       const prevRace = prevRaceRes.rows[0];
 
       const prevResults = await pool.query(`
         SELECT position, horse_number, raw_text
         FROM race_results
-        WHERE race_id = $1
+        WHERE video_race_time_uk = $1
         ORDER BY position
-      `, [prevRace.id]);
+      `, [prevRace.race_time_uk]);
 
       lastResults = prevResults.rows;
     }
