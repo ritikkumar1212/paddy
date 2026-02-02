@@ -47,8 +47,8 @@ async function getLatestRaceLive() {
 const upcomingRes = await pool.query(`
   SELECT id, race_time_ist, race_time_uk, runner_count
   FROM races
-  WHERE
-    to_timestamp(
+  WHERE race_time_ist <> '00:00'
+    AND to_timestamp(
       scraped_date || ' ' ||
       substring(race_time_ist from '([0-9]{2}:[0-9]{2})'),
       'YYYY-MM-DD HH24:MI'
@@ -60,7 +60,7 @@ const upcomingRes = await pool.query(`
       'YYYY-MM-DD HH24:MI'
     ) AT TIME ZONE 'Asia/Kolkata'
   ORDER BY race_time_ist
-  LIMIT 10
+  LIMIT 20
 `, [
   currentRace.scraped_date,
   currentRace.race_time_ist
