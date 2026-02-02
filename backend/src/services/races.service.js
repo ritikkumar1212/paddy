@@ -151,18 +151,16 @@ async function getDuplicateRaces(raceId) {
   return dupes.rows;
 }
 
-async function getUpcomingRaces() {
+async function getUpcomingRaces(currentRaceTime) {
+
   const res = await pool.query(`
     SELECT id, race_time_ist, race_time_uk, runner_count
     FROM races
     WHERE scraped_date = CURRENT_DATE
-      AND to_timestamp(
-            scraped_date || ' ' ||
-            substring(race_time_ist from '([0-9]{2}:[0-9]{2})'),
-            'YYYY-MM-DD HH24:MI'
-          ) > NOW() AT TIME ZONE 'Asia/Kolkata'
+      AND race_time_ist > $1
     ORDER BY race_time_ist
-  `);
+    LIMIT 10
+  `,[currentRaceTime]);
 
   return res.rows;
 }

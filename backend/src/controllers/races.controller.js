@@ -16,14 +16,32 @@ async function getDuplicates(req, res) {
 
   res.json({ success: true, data: rows });
 }
-async function getUpcoming(req, res) {
-  try {
-    const races = await raceService.getUpcomingRaces();
-    res.json({ data: races });
-  } catch (e) {
-    res.status(500).json({ error: "Failed to load upcoming races" });
+async function getUpcoming(req,res){
+
+  try{
+    const current = await pool.query(`
+      SELECT race_time_ist
+      FROM races
+      ORDER BY scraped_at DESC
+      LIMIT 1
+    `);
+
+    if(!current.rows.length){
+      return res.json({data:[]});
+    }
+
+    const upcoming = await raceService.getUpcomingRaces(
+      current.rows[0].race_time_ist
+    );
+
+    res.json({data:upcoming});
+
+  }catch(e){
+    console.error(e);
+    res.status(500).json({error:"failed"});
   }
 }
+
 async function getRaceDetails(req,res){
   try{
     const data = await raceService.getRaceDetails(req.params.id);
