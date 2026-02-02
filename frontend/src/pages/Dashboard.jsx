@@ -41,7 +41,7 @@ export default function Dashboard() {
           <h1>🏇 Paddy Virtual Racing</h1>
 
           <a
-            href="https://YOUR_BACKEND/api/export/excel"
+            href="https://paddy-v3go.onrender.com/api/export/excel"
             target="_blank"
             rel="noopener noreferrer"
             style={{
