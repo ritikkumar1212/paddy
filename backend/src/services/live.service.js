@@ -11,10 +11,9 @@ async function getLatestRaceLive() {
     (scraped_date + race_time_ist::time) AS race_ts
     FROM races
     WHERE scraped_date = CURRENT_DATE
-    ORDER BY ABS(EXTRACT(EPOCH FROM (
-      (scraped_date + race_time_ist::time) -
-      (NOW() AT TIME ZONE 'Asia/Kolkata')
-    )))
+      AND (scraped_date + race_time_ist::time)
+          <= (NOW() AT TIME ZONE 'Asia/Kolkata') + INTERVAL '30 seconds'
+    ORDER BY race_ts DESC
     LIMIT 1
   `);
 
