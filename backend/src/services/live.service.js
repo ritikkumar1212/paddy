@@ -2,19 +2,24 @@ const pool = require("../config/db");
 
 async function getLatestRaceLive() {
 
-  // =====================================
-  // CURRENT RACE (latest IST <= now)
-  // =====================================
+  // ================= CURRENT IST =================
+  const nowRes = await pool.query(`
+    SELECT NOW() AT TIME ZONE 'Asia/Kolkata' AS ist_now
+  `);
+
+  const istNow = nowRes.rows[0].ist_now;
+
+  // ================= CURRENT RACE =================
 
   const raceRes = await pool.query(`
-    SELECT *,
-    scraped_date + race_time_ist::time AS race_ts
+    SELECT *
     FROM races
     WHERE scraped_date = CURRENT_DATE
-      AND scraped_date + race_time_ist::time <= NOW() AT TIME ZONE 'Asia/Kolkata'
-    ORDER BY race_ts DESC
+      AND to_timestamp(scraped_date || ' ' || race_time_ist, 'YYYY-MM-DD HH24:MI')
+          <= $1
+    ORDER BY to_timestamp(scraped_date || ' ' || race_time_ist, 'YYYY-MM-DD HH24:MI') DESC
     LIMIT 1
-  `);
+  `,[istNow]);
 
   if (!raceRes.rows.length) {
     return {
@@ -28,9 +33,7 @@ async function getLatestRaceLive() {
 
   const currentRace = raceRes.rows[0];
 
-  // =====================================
-  // RUNNERS
-  // =====================================
+  // ================= RUNNERS =================
 
   const runnersRes = await pool.query(`
     SELECT runner_number, horse_name, jockey_name, odds
@@ -39,17 +42,17 @@ async function getLatestRaceLive() {
     ORDER BY runner_number
   `,[currentRace.id]);
 
-  // =====================================
-  // RESULTS (ONLY AFTER 90 SECONDS)
-  // =====================================
+  // ================= RESULT GATE (90s) =================
 
-  const resultGate = await pool.query(`
-    SELECT NOW() AT TIME ZONE 'Asia/Kolkata' > $1 + INTERVAL '90 seconds' AS allowed
-  `,[currentRace.race_ts]);
+  const raceTsRes = await pool.query(`
+    SELECT to_timestamp($1 || ' ' || $2, 'YYYY-MM-DD HH24:MI') AS race_ts
+  `,[currentRace.scraped_date, currentRace.race_time_ist]);
+
+  const raceTs = raceTsRes.rows[0].race_ts;
 
   let lastResults = [];
 
-  if (resultGate.rows[0].allowed) {
+  if (istNow > new Date(raceTs.getTime() + 90000)) {
 
     const resultsRes = await pool.query(`
       SELECT position, horse_number, raw_text
@@ -61,9 +64,7 @@ async function getLatestRaceLive() {
     lastResults = resultsRes.rows;
   }
 
-  // =====================================
-  // DUPLICATES
-  // =====================================
+  // ================= DUPLICATES =================
 
   const dupCountRes = await pool.query(`
     SELECT COUNT(*)::int AS count
