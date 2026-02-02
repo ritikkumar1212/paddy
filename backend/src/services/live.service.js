@@ -8,14 +8,13 @@ async function getLatestRaceLive() {
 
   const currentRaceRes = await pool.query(`
     SELECT *,
-        (scraped_date + race_time_ist::time) AS race_ts
-  FROM races
-  WHERE scraped_date = CURRENT_DATE
-    AND (scraped_date + race_time_ist::time + INTERVAL '15 seconds')
-        <= (NOW() AT TIME ZONE 'Asia/Kolkata')
-  ORDER BY race_ts DESC
-  LIMIT 1;
-
+      (scraped_date + race_time_ist::time) AS race_ts
+    FROM races
+    WHERE scraped_date = CURRENT_DATE
+      AND (scraped_date + race_time_ist::time)
+          <= (NOW() AT TIME ZONE 'Asia/Kolkata') + INTERVAL '15 seconds'
+    ORDER BY race_ts DESC
+    LIMIT 1
   `);
 
   if (!currentRaceRes.rows.length) {
@@ -42,7 +41,7 @@ async function getLatestRaceLive() {
   `, [currentRace.id]);
 
   // ===============================
-  // 3️⃣ RESULTS ONLY FOR CURRENT RACE
+  // 3️⃣ RESULTS BY UK TIME (ONLY)
   // ===============================
 
   const resultsRes = await pool.query(`
@@ -52,8 +51,10 @@ async function getLatestRaceLive() {
     ORDER BY position
   `, [currentRace.race_time_uk]);
 
+  const lastResults = resultsRes.rows; // empty = waiting
+
   // ===============================
-  // 4️⃣ DUPLICATE INFO
+  // 4️⃣ DUPLICATES
   // ===============================
 
   const dupCountRes = await pool.query(`
@@ -74,7 +75,7 @@ async function getLatestRaceLive() {
   return {
     current_race: currentRace,
     runners: runnersRes.rows,
-    last_results: resultsRes.rows,   // EMPTY until race finishes
+    last_results: lastResults,
     duplicate_count: dupCountRes.rows[0]?.count || 0,
     last_seen: lastSeenRes.rows[0]?.scraped_at || null
   };
