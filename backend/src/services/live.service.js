@@ -8,13 +8,14 @@ async function getLatestRaceLive() {
 
   const currentRaceRes = await pool.query(`
     SELECT *,
-    (scraped_date + race_time_ist::time) AS race_ts
-    FROM races
-    WHERE scraped_date = CURRENT_DATE
-      AND (scraped_date + race_time_ist::time)
-          <= (NOW() AT TIME ZONE 'Asia/Kolkata') + INTERVAL '30 seconds'
-    ORDER BY race_ts DESC
-    LIMIT 1
+        (scraped_date + race_time_ist::time) AS race_ts
+  FROM races
+  WHERE scraped_date = CURRENT_DATE
+    AND (scraped_date + race_time_ist::time + INTERVAL '45 seconds')
+        <= (NOW() AT TIME ZONE 'Asia/Kolkata')
+  ORDER BY race_ts DESC
+  LIMIT 1;
+
   `);
 
   if (!currentRaceRes.rows.length) {
