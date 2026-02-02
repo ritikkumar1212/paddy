@@ -151,7 +151,19 @@ async function getDuplicateRaces(raceId) {
   return dupes.rows;
 }
 
-async function getUpcomingRaces(currentRaceTime) {
+async function getUpcomingRaces() {
+
+  // current race IST
+  const current = await pool.query(`
+    SELECT race_time_ist
+    FROM races
+    ORDER BY scraped_at DESC
+    LIMIT 1
+  `);
+
+  if (!current.rows.length) return [];
+
+  const currentTime = current.rows[0].race_time_ist;
 
   const res = await pool.query(`
     SELECT id, race_time_ist, race_time_uk, runner_count
@@ -160,7 +172,7 @@ async function getUpcomingRaces(currentRaceTime) {
       AND race_time_ist > $1
     ORDER BY race_time_ist
     LIMIT 10
-  `,[currentRaceTime]);
+  `,[currentTime]);
 
   return res.rows;
 }
