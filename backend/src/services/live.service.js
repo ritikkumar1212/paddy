@@ -2,9 +2,9 @@ const pool = require("../config/db");
 
 async function getLatestRaceLive() {
 
-  // ================================
-  // 1️⃣ CURRENT RACE (by IST clock)
-  // ================================
+  // ===============================
+  // 1️⃣ CURRENT RACE BY IST CLOCK
+  // ===============================
 
   const currentRaceRes = await pool.query(`
     SELECT *,
@@ -30,9 +30,9 @@ async function getLatestRaceLive() {
 
   const currentRace = currentRaceRes.rows[0];
 
-  // ================================
+  // ===============================
   // 2️⃣ RUNNERS FOR CURRENT RACE
-  // ================================
+  // ===============================
 
   const runnersRes = await pool.query(`
     SELECT runner_number, horse_name, jockey_name, odds
@@ -41,42 +41,57 @@ async function getLatestRaceLive() {
     ORDER BY runner_number
   `, [currentRace.id]);
 
-  // ================================
-  // 3️⃣ PREVIOUS RACE (X-1)
-  // ================================
-
-  const prevRaceRes = await pool.query(`
-    SELECT *,
-    (scraped_date + race_time_ist::time) AS race_ts
-    FROM races
-    WHERE scraped_date = CURRENT_DATE
-      AND (scraped_date + race_time_ist::time) < $1
-    ORDER BY race_ts DESC
-    LIMIT 1
-  `, [currentRace.race_ts]);
+  // ===============================
+  // 3️⃣ CHECK RESULTS FOR SAME RACE
+  // ===============================
 
   let lastResults = [];
 
-  if (prevRaceRes.rows.length) {
-    const prevRace = prevRaceRes.rows[0];
+  const currentResults = await pool.query(`
+    SELECT position, horse_number, raw_text
+    FROM race_results
+    WHERE race_id = $1
+    ORDER BY position
+  `, [currentRace.id]);
 
-    // ================================
-    // 4️⃣ RESULTS ONLY FOR X-1
-    // ================================
+  if (currentResults.rows.length) {
 
-    const resultsRes = await pool.query(`
-      SELECT position, horse_number, raw_text
-      FROM race_results
-      WHERE race_id = $1
-      ORDER BY position
-    `, [prevRace.id]);
+    // ✅ Result already available for current race
+    lastResults = currentResults.rows;
 
-    lastResults = resultsRes.rows;
+  } else {
+
+    // ===============================
+    // 4️⃣ FALLBACK TO PREVIOUS RACE
+    // ===============================
+
+    const prevRaceRes = await pool.query(`
+      SELECT *,
+      (scraped_date + race_time_ist::time) AS race_ts
+      FROM races
+      WHERE scraped_date = CURRENT_DATE
+        AND (scraped_date + race_time_ist::time) < $1
+      ORDER BY race_ts DESC
+      LIMIT 1
+    `, [currentRace.race_ts]);
+
+    if (prevRaceRes.rows.length) {
+      const prevRace = prevRaceRes.rows[0];
+
+      const prevResults = await pool.query(`
+        SELECT position, horse_number, raw_text
+        FROM race_results
+        WHERE race_id = $1
+        ORDER BY position
+      `, [prevRace.id]);
+
+      lastResults = prevResults.rows;
+    }
   }
 
-  // ================================
-  // 5️⃣ DUPLICATE DETECTION
-  // ================================
+  // ===============================
+  // 5️⃣ DUPLICATE INFO
+  // ===============================
 
   const dupCountRes = await pool.query(`
     SELECT COUNT(*)::int AS count
