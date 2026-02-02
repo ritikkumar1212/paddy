@@ -12,14 +12,14 @@ export default function Dashboard() {
     const fetchLive = async () => {
   try {
     const res = await api.get("/api/live/latest");
-    const payload = res.data.data;
+    const d = res.data.data;
 
     setData({
-      current_race: payload.current_race,
-      runners: payload.runners,
-      last_results: payload.last_results ?? [],   // HARD RESET
-      duplicate_count: payload.duplicate_count,
-      last_seen: payload.last_seen
+      current_race: d.current_race || null,
+      runners: Array.isArray(d.runners) ? d.runners : [],
+      last_results: Array.isArray(d.last_results) ? [...d.last_results] : [],
+      duplicate_count: d.duplicate_count || 0,
+      last_seen: d.last_seen || null
     });
 
   } catch (err) {
