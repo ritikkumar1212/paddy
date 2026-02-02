@@ -3,17 +3,6 @@ import { buildWinnerMap } from "../utils/winnerMap";
 export default function RunnersTable({ runners, results }) {
   const winnerMap = buildWinnerMap(results || []);
 
-  const getRowStyle = (position) => {
-    if (position === 1) return { background: "#FFD700", fontWeight: "bold" }; // gold
-    if (position === 2) return { background: "#C0C0C0" }; // silver
-    if (position === 3) return { background: "#CD7F32", color: "white" }; // bronze
-    if (position === 4) return { background: "#90EE90" }; // green
-    return {};
-  };
-
-  const medal = (pos) =>
-    pos === 1 ? "🥇" : pos === 2 ? "🥈" : pos === 3 ? "🥉" : pos === 4 ? "🏅" : "";
-
   return (
     <div style={{ flex: 2 }}>
       <h3>Runners</h3>
