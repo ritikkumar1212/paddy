@@ -12,20 +12,24 @@ async function insertResults(payload) {
  // -----------------------------------
 // Find race that existed when result was scraped
 // -----------------------------------
-const raceLookup = await pool.query(`
+const raceLookup = await pool.query(
+  `
   SELECT id
   FROM races
-  WHERE scraped_at <= $1
+  WHERE race_time_uk = $1
   ORDER BY scraped_at DESC
   LIMIT 1
-`, [scrapedAt]);
+`,
+  [video_race_time_uk]
+);
 
 if (!raceLookup.rows.length) {
-  console.warn("No race found for result timestamp:", scrapedAt);
+  console.warn("No race found for UK time:", video_race_time_uk);
   return 0;
 }
 
 const raceId = raceLookup.rows[0].id;
+
 
 
 
