@@ -20,7 +20,7 @@ async function getLatestRaceLive() {
         'YYYY-MM-DD HH24:MI'
       ) AS race_ts
     FROM races
-    WHERE scraped_date = CURRENT_DATE
+    WHERE scraped_at >= NOW() - INTERVAL '3 hours'
       AND substring(race_time_ist from '([0-9]{2}:[0-9]{2})') IS NOT NULL
       AND to_timestamp(
             scraped_date || ' ' ||
@@ -56,8 +56,8 @@ async function getLatestRaceLive() {
   // Show result ONLY after 90 seconds
 
   let lastResults = [];
-
-  if (istNow > new Date(currentRace.race_ts.getTime() + 90000)) {
+  const raceTs = new Date(currentRace.race_ts);
+  if (istNow > new Date(raceTs.getTime() + 90000)) {
 
     const resultRes = await pool.query(`
       SELECT position, horse_number, raw_text
