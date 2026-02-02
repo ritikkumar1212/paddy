@@ -18,7 +18,7 @@ async function getDuplicates(req, res) {
 }
 async function getUpcoming(req,res){
   try{
-    const upcoming = await raceService.getUpcomingRaces();
+    const upcoming = await racesService.getUpcomingRaces();
     res.json({data:upcoming});
   }catch(e){
     console.error(e);
@@ -28,7 +28,7 @@ async function getUpcoming(req,res){
 
 async function getRaceDetails(req,res){
   try{
-    const data = await raceService.getRaceDetails(req.params.id);
+    const data = await racesService.getRaceDetails(req.params.id);
     res.json({data});
   }catch(e){
     res.status(500).json({error:"Failed"});
