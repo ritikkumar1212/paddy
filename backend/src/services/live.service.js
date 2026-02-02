@@ -30,7 +30,7 @@ async function getLatestRaceLive() {
   const currentRace = currentRaceRes.rows[0];
 
   // ===============================
-  // 2️⃣ RUNNERS FOR CURRENT RACE
+  // 2️⃣ RUNNERS
   // ===============================
 
   const runnersRes = await pool.query(`
@@ -41,55 +41,18 @@ async function getLatestRaceLive() {
   `, [currentRace.id]);
 
   // ===============================
-  // 3️⃣ RESULTS FOR CURRENT RACE (UK TIME)
+  // 3️⃣ RESULTS ONLY FOR CURRENT RACE
   // ===============================
 
-  let lastResults = [];
-
-  const currentResults = await pool.query(`
+  const resultsRes = await pool.query(`
     SELECT position, horse_number, raw_text
     FROM race_results
     WHERE video_race_time_uk = $1
     ORDER BY position
   `, [currentRace.race_time_uk]);
 
-  if (currentResults.rows.length) {
-
-    lastResults = currentResults.rows;
-
-  } else {
-
-    // ===============================
-    // 4️⃣ FALLBACK → PREVIOUS RACE BY IST
-    // ===============================
-
-    const prevRaceRes = await pool.query(`
-      SELECT *,
-      (scraped_date + race_time_ist::time) AS race_ts
-      FROM races
-      WHERE scraped_date = CURRENT_DATE
-        AND (scraped_date + race_time_ist::time) < $1
-      ORDER BY race_ts DESC
-      LIMIT 1
-    `, [currentRace.race_ts]);
-
-    if (prevRaceRes.rows.length) {
-
-      const prevRace = prevRaceRes.rows[0];
-
-      const prevResults = await pool.query(`
-        SELECT position, horse_number, raw_text
-        FROM race_results
-        WHERE video_race_time_uk = $1
-        ORDER BY position
-      `, [prevRace.race_time_uk]);
-
-      lastResults = prevResults.rows;
-    }
-  }
-
   // ===============================
-  // 5️⃣ DUPLICATE INFO
+  // 4️⃣ DUPLICATE INFO
   // ===============================
 
   const dupCountRes = await pool.query(`
@@ -110,7 +73,7 @@ async function getLatestRaceLive() {
   return {
     current_race: currentRace,
     runners: runnersRes.rows,
-    last_results: lastResults,
+    last_results: resultsRes.rows,   // EMPTY until race finishes
     duplicate_count: dupCountRes.rows[0]?.count || 0,
     last_seen: lastSeenRes.rows[0]?.scraped_at || null
   };
