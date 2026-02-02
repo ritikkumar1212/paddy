@@ -2,18 +2,16 @@ const pool = require("../config/db");
 
 async function getLatestRaceLive() {
 
-  // ===============================
-  // 1️⃣ CURRENT RACE BY IST CLOCK
-  // ===============================
+  // =========================================
+  // 1️⃣ CURRENT RACE — STRICT IST MINUTE
+  // =========================================
 
   const currentRaceRes = await pool.query(`
-    SELECT *,
-      (scraped_date + race_time_ist::time) AS race_ts
+    SELECT *
     FROM races
     WHERE scraped_date = CURRENT_DATE
-      AND (scraped_date + race_time_ist::time)
-          <= (NOW() AT TIME ZONE 'Asia/Kolkata') + INTERVAL '30 seconds'
-    ORDER BY race_ts DESC
+      AND date_trunc('minute', scraped_date + race_time_ist::time)
+          = date_trunc('minute', NOW() AT TIME ZONE 'Asia/Kolkata')
     LIMIT 1
   `);
 
@@ -29,9 +27,9 @@ async function getLatestRaceLive() {
 
   const currentRace = currentRaceRes.rows[0];
 
-  // ===============================
-  // 2️⃣ RUNNERS
-  // ===============================
+  // =========================================
+  // 2️⃣ RUNNERS FOR CURRENT RACE
+  // =========================================
 
   const runnersRes = await pool.query(`
     SELECT runner_number, horse_name, jockey_name, odds
@@ -40,9 +38,9 @@ async function getLatestRaceLive() {
     ORDER BY runner_number
   `, [currentRace.id]);
 
-  // ===============================
-  // 3️⃣ RESULTS BY UK TIME (ONLY)
-  // ===============================
+  // =========================================
+  // 3️⃣ RESULTS — STRICT UK TIME MATCH
+  // =========================================
 
   const resultsRes = await pool.query(`
     SELECT position, horse_number, raw_text
@@ -51,11 +49,11 @@ async function getLatestRaceLive() {
     ORDER BY position
   `, [currentRace.race_time_uk]);
 
-  const lastResults = resultsRes.rows; // empty = waiting
+  const lastResults = resultsRes.rows;
 
-  // ===============================
-  // 4️⃣ DUPLICATES
-  // ===============================
+  // =========================================
+  // 4️⃣ DUPLICATE INFO
+  // =========================================
 
   const dupCountRes = await pool.query(`
     SELECT COUNT(*)::int AS count
@@ -75,7 +73,7 @@ async function getLatestRaceLive() {
   return {
     current_race: currentRace,
     runners: runnersRes.rows,
-    last_results: lastResults,
+    last_results: lastResults, // empty until UK time result arrives
     duplicate_count: dupCountRes.rows[0]?.count || 0,
     last_seen: lastSeenRes.rows[0]?.scraped_at || null
   };
