@@ -5,6 +5,7 @@ import { api } from "../api/api";
 export default function RaceDetails() {
   const { id } = useParams();
   const [data, setData] = useState(null);
+  const [showHistory, setShowHistory] = useState(false);
 
   useEffect(() => {
     api.get(`/api/races/${id}`).then(res => setData(res.data.data));
@@ -53,15 +54,40 @@ export default function RaceDetails() {
         <div className="panel">
           <div className="panel-header">
             <h3>Previous Occurrences</h3>
-            <span className="pill">History</span>
+            <span className="pill">
+              {data.history.length} {data.history.length === 1 ? "Occurrence" : "Occurrences"}
+            </span>
           </div>
-          <div className="results-list">
-            {data.history.map((h) => (
-              <div key={h.id} className="result-card">
-                {h.scraped_at} — Winner: {h.winner}
-              </div>
-            ))}
-          </div>
+          <p className="muted">
+            {data.history.length > 0
+              ? `This race has occurred ${data.history.length} time${
+                  data.history.length === 1 ? "" : "s"
+                } before.`
+              : "This race has occurred for the first time."}
+          </p>
+
+          {data.history.length > 0 && (
+            <>
+              <button
+                type="button"
+                className="button secondary"
+                style={{ marginTop: 16 }}
+                onClick={() => setShowHistory((prev) => !prev)}
+              >
+                {showHistory ? "Hide History" : "View History"}
+              </button>
+
+              {showHistory && (
+                <div className="results-list" style={{ marginTop: 16 }}>
+                  {data.history.map((h) => (
+                    <div key={h.id} className="result-card">
+                      {h.scraped_at} — Winner: {h.winner}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>
