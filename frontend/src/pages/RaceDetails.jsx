@@ -13,23 +13,57 @@ export default function RaceDetails() {
   if (!data) return "Loading...";
 
   return (
-    <div style={{ padding:30 }}>
-      <h2>Race {data.race.race_time_ist}</h2>
-
-      <h3>Runners</h3>
-      {data.runners.map(r => (
-        <div key={r.runner_number}>
-          {r.runner_number}. {r.horse_name} ({r.odds})
+    <div className="app-shell">
+      <div className="top-bar">
+        <div>
+          <p className="eyebrow">Race recap</p>
+          <h2>Race {data.race.race_time_ist}</h2>
         </div>
-      ))}
+        <span className="pill">Race #{data.race.id}</span>
+      </div>
 
-      <h3 style={{marginTop:20}}>Previous Occurrences</h3>
-
-      {data.history.map(h => (
-        <div key={h.id}>
-          {h.scraped_at} — Winner: {h.winner}
+      <div className="page-stack">
+        <div className="panel">
+          <div className="panel-header">
+            <h3>Runners</h3>
+            <span className="pill warning">Lineup</span>
+          </div>
+          <div className="table-shell">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Horse</th>
+                  <th>Odds</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.runners.map((r) => (
+                  <tr key={r.runner_number}>
+                    <td>{r.runner_number}</td>
+                    <td>{r.horse_name}</td>
+                    <td>{r.odds}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      ))}
+
+        <div className="panel">
+          <div className="panel-header">
+            <h3>Previous Occurrences</h3>
+            <span className="pill">History</span>
+          </div>
+          <div className="results-list">
+            {data.history.map((h) => (
+              <div key={h.id} className="result-card">
+                {h.scraped_at} — Winner: {h.winner}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

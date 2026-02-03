@@ -3,30 +3,27 @@ import { buildWinnerMap } from "../utils/winnerMap";
 export default function RunnersTable({ runners, results }) {
   const winnerMap = buildWinnerMap(results || []);
 
-  const getRowStyle = (position) => {
-    if (position === 1) return { background: "#FFD700", fontWeight: "bold" }; // gold
-    if (position === 2) return { background: "#C0C0C0" }; // silver
-    if (position === 3) return { background: "#CD7F32", color: "white" }; // bronze
-    if (position === 4) return { background: "#90EE90" }; // green
-    return {};
+  const getRowClass = (position) => {
+    if (position === 1) return "row--gold";
+    if (position === 2) return "row--silver";
+    if (position === 3) return "row--bronze";
+    if (position === 4) return "row--green";
+    return "";
   };
 
   const medal = (pos) =>
     pos === 1 ? "🥇" : pos === 2 ? "🥈" : pos === 3 ? "🥉" : pos === 4 ? "🏅" : "";
 
   return (
-    <div style={{ flex: 2 }}>
-      <h3>Runners</h3>
+    <div className="panel">
+      <div className="panel-header">
+        <h3>Runners</h3>
+        <span className="pill warning">Live Field</span>
+      </div>
 
-      <table
-        style={{
-          width: "100%",
-          borderCollapse: "collapse",
-          borderRadius: 10,
-          overflow: "hidden"
-        }}
-      >
-        <thead style={{ background: "#222", color: "#fff" }}>
+      <div className="table-shell">
+        <table>
+          <thead>
           <tr>
             <th>#</th>
             <th>Horse</th>
@@ -40,7 +37,7 @@ export default function RunnersTable({ runners, results }) {
             const position = winnerMap[r.runner_number];
 
             return (
-              <tr key={r.runner_number} style={getRowStyle(position)}>
+              <tr key={r.runner_number} className={getRowClass(position)}>
                 <td>{r.runner_number}</td>
                 <td>
                   {medal(position)} {r.horse_name}
@@ -51,7 +48,8 @@ export default function RunnersTable({ runners, results }) {
             );
           })}
         </tbody>
-      </table>
+        </table>
+      </div>
     </div>
   );
 }
