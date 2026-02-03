@@ -21,7 +21,7 @@ export default function UpcomingRaces({ races }) {
             borderBottom: "1px solid #1f2937",
             cursor: "pointer"
           }}
-          onClick={() => window.location.hash = `/race/${r.id}`}
+          onClick={() => window.location.hash = `#/race/${r.id}`}
         >
           🕒 {r.race_time_ist} IST
         </div>
