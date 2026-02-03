@@ -42,15 +42,15 @@ async function getLatestRaceLive() {
   }
 
   const currentRace = raceRes.rows[0];
-  /// ================= UPCOMING RACES (MINIMAL FIX) =================
+  // ================= UPCOMING RACES (BY ID) =================
 
 const upcomingRes = await pool.query(`
   SELECT id, race_time_ist, race_time_uk, runner_count
   FROM races
-  WHERE race_time_uk > $1
-  ORDER BY race_time_uk
+  WHERE id > $1
+  ORDER BY id
   LIMIT 20
-`, [currentRace.race_time_uk]);
+`, [currentRace.id]);
 
 const upcoming = upcomingRes.rows;
 
