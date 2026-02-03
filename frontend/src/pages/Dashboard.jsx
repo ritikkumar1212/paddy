@@ -38,47 +38,40 @@ export default function Dashboard() {
 
   return (
     <>
-      <div style={{ padding: 30 }}>
-        <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <h1>🏇 Paddy Virtual Racing</h1>
+      <div className="app-shell">
+        <div className="top-bar">
+          <div>
+            <p className="eyebrow">Live dashboard</p>
+            <h1>🏇 Paddy Virtual Racing</h1>
+          </div>
 
-          <a
-            href="https://paddy-v3go.onrender.com/api/export/excel"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              color: "white",
-              background: "#2563eb",
-              padding: "8px 14px",
-              borderRadius: 6,
-              textDecoration: "none"
-            }}
-          >
-            ⬇ Download Excel
-          </a>
+          <div className="action-row">
+            <span className="pill">Auto refresh · 5s</span>
+            <a
+              href="https://paddy-v3go.onrender.com/api/export/excel"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="button"
+            >
+              ⬇ Download Excel
+            </a>
+          </div>
         </div>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "2.2fr 1fr",
-            gap: 24
-          }}
-        >
+        <div className="dashboard-grid">
           {/* LEFT */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          <div className="page-stack">
             <RaceInfo race={data.current_race} />
 
-            <div
-              style={{
-                background: "#020617",
-                border: "1px solid #1f2937",
-                borderRadius: 14,
-                padding: 16
-              }}
-            >
-              <InfoRow label="Duplicate Count" value={data.duplicate_count} />
-              <InfoRow label="Last Seen" value={data.last_seen || "First time"} />
+            <div className="panel">
+              <div className="panel-header">
+                <h3>Signal Health</h3>
+                <span className="pill">Monitoring</span>
+              </div>
+              <div className="info-grid">
+                <InfoRow label="Duplicate Count" value={data.duplicate_count} />
+                <InfoRow label="Last Seen" value={data.last_seen || "First time"} />
+              </div>
 
               {data.duplicate_count >= 2 && (
                 <button
@@ -89,15 +82,8 @@ export default function Dashboard() {
                     setDupes(res.data.data);
                     setShowDupes(true);
                   }}
-                  style={{
-                    marginTop: 10,
-                    background: "#2563eb",
-                    color: "white",
-                    padding: "6px 12px",
-                    borderRadius: 6,
-                    border: "none",
-                    cursor: "pointer"
-                  }}
+                  className="button secondary"
+                  style={{ marginTop: 16 }}
                 >
                   View Past Duplicate Races
                 </button>
@@ -108,7 +94,7 @@ export default function Dashboard() {
           </div>
 
           {/* RIGHT */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          <div className="page-stack">
             <ResultsCard results={data.last_results} runners={data.runners} />
             <UpcomingRaces races={data.upcoming} />
           </div>
@@ -117,42 +103,23 @@ export default function Dashboard() {
 
       {/* DUPLICATE MODAL */}
       {showDupes && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,.6)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center"
-          }}
-        >
-          <div
-            style={{
-              background: "#020617",
-              padding: 20,
-              borderRadius: 12,
-              width: 420
-            }}
-          >
+        <div className="modal-backdrop">
+          <div className="modal">
             <h3>Past Duplicate Races</h3>
 
-            {dupes.map(d => (
-              <div key={d.id} style={{ padding: 8 }}>
-                Race #{d.id} – {d.race_time_uk} –{" "}
-                {new Date(d.scraped_at).toLocaleString()}
-              </div>
-            ))}
+            <div className="modal-list">
+              {dupes.map((d) => (
+                <div key={d.id} className="result-card">
+                  Race #{d.id} – {d.race_time_uk} –{" "}
+                  {new Date(d.scraped_at).toLocaleString()}
+                </div>
+              ))}
+            </div>
 
             <button
               onClick={() => setShowDupes(false)}
-              style={{
-                marginTop: 10,
-                background: "#ef4444",
-                color: "white",
-                padding: "6px 12px",
-                borderRadius: 6
-              }}
+              className="button secondary"
+              style={{ marginTop: 16 }}
             >
               Close
             </button>
@@ -167,28 +134,26 @@ export default function Dashboard() {
 
 function RaceInfo({ race }) {
   return (
-    <div
-      style={{
-        background: "#020617",
-        border: "1px solid #1f2937",
-        borderRadius: 14,
-        padding: 20
-      }}
-    >
-      <h3>Current Race</h3>
+    <div className="panel">
+      <div className="panel-header">
+        <h3>Current Race</h3>
+        <span className="pill">Race #{race.id}</span>
+      </div>
 
-      <InfoRow label="Race Time (IST)" value={race.race_time_ist} />
-      <InfoRow label="Race Time (UK)" value={race.race_time_uk} />
-      <InfoRow label="Runners" value={race.runner_count} />
-      <InfoRow label="Race ID" value={race.id} />
+      <div className="info-grid">
+        <InfoRow label="Race Time (IST)" value={race.race_time_ist} />
+        <InfoRow label="Race Time (UK)" value={race.race_time_uk} />
+        <InfoRow label="Runners" value={race.runner_count} />
+        <InfoRow label="Race ID" value={race.id} />
+      </div>
     </div>
   );
 }
 
 function InfoRow({ label, value }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between" }}>
-      <span style={{ color: "#9ca3af" }}>{label}</span>
+    <div className="info-row">
+      <span>{label}</span>
       <span>{value}</span>
     </div>
   );
