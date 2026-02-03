@@ -101,7 +101,7 @@ const upcoming = upcomingRes.rows;
     current_race: currentRace,
     runners: runnersRes.rows,
     last_results: lastResults,
-    upcoming: Array.isArray(d.upcoming) ? d.upcoming : [],
+    upcoming,
     duplicate_count: dupCountRes.rows[0]?.count || 0,
     last_seen: lastSeenRes.rows[0]?.scraped_at || null
   };

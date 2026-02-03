@@ -19,6 +19,7 @@ export default function Dashboard() {
       current_race: d.current_race || null,
       runners: Array.isArray(d.runners) ? d.runners : [],
       last_results: Array.isArray(d.last_results) ? [...d.last_results] : [],
+      upcoming: Array.isArray(d.upcoming) ? d.upcoming : [],
       duplicate_count: d.duplicate_count || 0,
       last_seen: d.last_seen || null
     });
