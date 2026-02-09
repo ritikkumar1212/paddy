@@ -1,4 +1,5 @@
 export default function ResultsCard({ results = [], runners = [] }) {
+  // Build runner map
   const horseMap = {};
   runners.forEach(r => {
     horseMap[r.runner_number] = r.horse_name;
@@ -7,8 +8,16 @@ export default function ResultsCard({ results = [], runners = [] }) {
   const emoji = (p) =>
     p === 1 ? "🥇" : p === 2 ? "🥈" : p === 3 ? "🥉" : "🏅";
 
-  // HARD RESET WHEN EMPTY
-  if (!Array.isArray(results) || results.length === 0) {
+  // --------- FIX 1: Deduplicate results by position ---------
+  const uniqueResults = Object.values(
+    results.reduce((acc, r) => {
+      if (!acc[r.position]) acc[r.position] = r;
+      return acc;
+    }, {})
+  );
+
+  // --------- FIX 2: Hard reset when empty ---------
+  if (!uniqueResults.length) {
     return (
       <div className="panel" style={{ position: "sticky", top: 30 }}>
         <div className="panel-header">
@@ -28,14 +37,18 @@ export default function ResultsCard({ results = [], runners = [] }) {
       </div>
 
       <div className="results-list">
-        {results.map((r) => (
+        {uniqueResults.map((r) => (
           <div key={r.position} className="result-card">
             <strong>
               {emoji(r.position)} Position {r.position}
             </strong>
 
             <div style={{ fontSize: 16, marginTop: 4 }}>
-              {horseMap[r.horse_number] || "Unknown"}
+              {
+                horseMap[r.horse_number] ||
+                r.raw_text ||                 // fallback to scraped text
+                "Waiting…"                    // final safety
+              }
             </div>
           </div>
         ))}
