@@ -82,8 +82,6 @@ async function exportExcel(req, res) {
       if (!rows.length) break;
 
       const raceIds = rows.map(r => r.race_id);
-      const raceTimesUk = rows.map(r => r.race_time_uk);
-
       const runnersRes = await pool.query(
         `
         SELECT race_id, runner_number, horse_name, jockey_name, odds
@@ -96,11 +94,11 @@ async function exportExcel(req, res) {
 
       const resultsRes = await pool.query(
         `
-        SELECT video_race_time_uk, horse_number, position
+        SELECT race_id, horse_number, position
         FROM race_results
-        WHERE video_race_time_uk = ANY($1)
+        WHERE race_id = ANY($1)
         `,
-        [raceTimesUk]
+        [raceIds]
       );
 
       const runnersByRace = {};
@@ -109,12 +107,12 @@ async function exportExcel(req, res) {
         runnersByRace[rr.race_id][rr.runner_number] = rr;
       }
 
-      const resultsByTime = {};
+      const resultsByRace = {};
       for (const resRow of resultsRes.rows) {
-        if (!resultsByTime[resRow.video_race_time_uk]) {
-          resultsByTime[resRow.video_race_time_uk] = {};
+        if (!resultsByRace[resRow.race_id]) {
+          resultsByRace[resRow.race_id] = {};
         }
-        resultsByTime[resRow.video_race_time_uk][resRow.horse_number] = resRow.position;
+        resultsByRace[resRow.race_id][resRow.horse_number] = resRow.position;
       }
 
       const fillForPosition = (position) => {
@@ -135,7 +133,7 @@ async function exportExcel(req, res) {
         };
 
         const raceRunners = runnersByRace[r.race_id] || {};
-        const raceResults = resultsByTime[r.race_time_uk] || {};
+        const raceResults = resultsByRace[r.race_id] || {};
         for (let i = 1; i <= maxRunners; i += 1) {
           const rr = raceRunners[i];
           row[`name_${i}`] = rr?.horse_name || null;
