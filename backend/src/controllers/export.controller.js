@@ -82,6 +82,8 @@ async function exportExcel(req, res) {
       if (!rows.length) break;
 
       const raceIds = rows.map(r => r.race_id);
+      const raceTimesUk = rows.map(r => r.race_time_uk);
+
       const runnersRes = await pool.query(
         `
         SELECT race_id, runner_number, horse_name, jockey_name, odds
@@ -92,11 +94,35 @@ async function exportExcel(req, res) {
         [raceIds]
       );
 
+      const resultsRes = await pool.query(
+        `
+        SELECT video_race_time_uk, horse_number, position
+        FROM race_results
+        WHERE video_race_time_uk = ANY($1)
+        `,
+        [raceTimesUk]
+      );
+
       const runnersByRace = {};
       for (const rr of runnersRes.rows) {
         if (!runnersByRace[rr.race_id]) runnersByRace[rr.race_id] = {};
         runnersByRace[rr.race_id][rr.runner_number] = rr;
       }
+
+      const resultsByTime = {};
+      for (const resRow of resultsRes.rows) {
+        if (!resultsByTime[resRow.video_race_time_uk]) {
+          resultsByTime[resRow.video_race_time_uk] = {};
+        }
+        resultsByTime[resRow.video_race_time_uk][resRow.horse_number] = resRow.position;
+      }
+
+      const fillForPosition = (position) => {
+        if (position === 1) return { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFD700" } }; // gold
+        if (position === 2) return { type: "pattern", pattern: "solid", fgColor: { argb: "FFC0C0C0" } }; // silver
+        if (position === 3) return { type: "pattern", pattern: "solid", fgColor: { argb: "FFCD7F32" } }; // bronze
+        return null;
+      };
 
       rows.forEach(r => {
         const row = {
@@ -109,6 +135,7 @@ async function exportExcel(req, res) {
         };
 
         const raceRunners = runnersByRace[r.race_id] || {};
+        const raceResults = resultsByTime[r.race_time_uk] || {};
         for (let i = 1; i <= maxRunners; i += 1) {
           const rr = raceRunners[i];
           row[`name_${i}`] = rr?.horse_name || null;
@@ -116,7 +143,24 @@ async function exportExcel(req, res) {
           row[`odds_${i}`] = rr?.odds || null;
         }
 
-        sheet.addRow(row).commit();
+        const added = sheet.addRow(row);
+
+        const baseCol = 4; // Date, Time, UK Time, IST Time
+        for (let i = 1; i <= maxRunners; i += 1) {
+          const pos = raceResults[i];
+          const fill = fillForPosition(pos);
+          if (!fill) continue;
+
+          const nameCol = baseCol + (i - 1) * 3 + 1;
+          const jockeyCol = nameCol + 1;
+          const oddsCol = nameCol + 2;
+
+          added.getCell(nameCol).fill = fill;
+          added.getCell(jockeyCol).fill = fill;
+          added.getCell(oddsCol).fill = fill;
+        }
+
+        added.commit();
       });
     }
 
