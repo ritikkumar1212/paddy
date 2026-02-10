@@ -82,7 +82,7 @@ async function exportExcel(req, res) {
       if (!rows.length) break;
 
       const raceIds = rows.map(r => r.race_id);
-      const runnersRes = await client.query(
+      const runnersRes = await pool.query(
         `
         SELECT race_id, runner_number, horse_name, jockey_name, odds
         FROM race_runners
