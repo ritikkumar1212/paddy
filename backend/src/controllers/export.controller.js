@@ -8,16 +8,29 @@ async function exportExcel(req, res) {
     const workbook = new ExcelJS.stream.xlsx.WorkbookWriter({ stream: res });
     const sheet = workbook.addWorksheet("Races");
 
-    sheet.columns = [
-      { header: "Race ID", key: "race_id", width: 10 },
+    const maxRunners = 16;
+
+    const columns = [
+      { header: "Date", key: "scraped_date", width: 12 },
+      { header: "Time", key: "scraped_time", width: 10 },
       { header: "UK Time", key: "race_time_uk", width: 10 },
-      { header: "IST Time", key: "race_time_ist", width: 10 },
-      { header: "Runner #", key: "runner_number", width: 10 },
-      { header: "Horse", key: "horse_name", width: 25 },
-      { header: "Jockey", key: "jockey_name", width: 25 },
-      { header: "Odds", key: "odds", width: 10 },
-      { header: "Position", key: "position", width: 10 }
+      { header: "IST Time", key: "race_time_ist", width: 10 }
     ];
+
+    for (let i = 1; i <= maxRunners; i += 1) {
+      columns.push(
+        { header: `Name_${i}`, key: `name_${i}`, width: 25 },
+        { header: `Jockey_${i}`, key: `jockey_${i}`, width: 25 },
+        { header: `Odds_${i}`, key: `odds_${i}`, width: 12 }
+      );
+    }
+
+    columns.push(
+      { header: "Duplicate Count", key: "duplicate_count", width: 16 },
+      { header: "Last Seen", key: "last_seen", width: 22 }
+    );
+
+    sheet.columns = columns;
 
     res.setHeader(
       "Content-Type",
@@ -31,19 +44,26 @@ async function exportExcel(req, res) {
     const query = `
       SELECT
         r.id AS race_id,
+        r.scraped_date,
+        r.scraped_at,
         r.race_time_uk,
         r.race_time_ist,
-        rr.runner_number,
-        rr.horse_name,
-        rr.jockey_name,
-        rr.odds,
-        res.position
+        r.race_signature,
+        (
+          SELECT COUNT(*)::int
+          FROM races r2
+          WHERE r2.race_signature = r.race_signature
+        ) AS duplicate_count,
+        (
+          SELECT r3.scraped_at
+          FROM races r3
+          WHERE r3.race_signature = r.race_signature
+            AND r3.scraped_at < r.scraped_at
+          ORDER BY r3.scraped_at DESC
+          LIMIT 1
+        ) AS last_seen
       FROM races r
-      LEFT JOIN race_runners rr ON rr.race_id = r.id
-      LEFT JOIN race_results res 
-        ON res.race_id = r.id
-       AND res.horse_number = rr.runner_number
-      ORDER BY r.id DESC, rr.runner_number
+      ORDER BY r.id DESC
     `;
 
     const cursor = client.query(new (require("pg-cursor"))(query));
@@ -61,7 +81,43 @@ async function exportExcel(req, res) {
       const rows = await read();
       if (!rows.length) break;
 
-      rows.forEach(r => sheet.addRow(r).commit());
+      const raceIds = rows.map(r => r.race_id);
+      const runnersRes = await client.query(
+        `
+        SELECT race_id, runner_number, horse_name, jockey_name, odds
+        FROM race_runners
+        WHERE race_id = ANY($1)
+        ORDER BY race_id, runner_number
+        `,
+        [raceIds]
+      );
+
+      const runnersByRace = {};
+      for (const rr of runnersRes.rows) {
+        if (!runnersByRace[rr.race_id]) runnersByRace[rr.race_id] = {};
+        runnersByRace[rr.race_id][rr.runner_number] = rr;
+      }
+
+      rows.forEach(r => {
+        const row = {
+          scraped_date: r.scraped_date,
+          scraped_time: r.scraped_at ? String(r.scraped_at).slice(11, 19) : null,
+          race_time_uk: r.race_time_uk,
+          race_time_ist: r.race_time_ist,
+          duplicate_count: r.duplicate_count,
+          last_seen: r.last_seen
+        };
+
+        const raceRunners = runnersByRace[r.race_id] || {};
+        for (let i = 1; i <= maxRunners; i += 1) {
+          const rr = raceRunners[i];
+          row[`name_${i}`] = rr?.horse_name || null;
+          row[`jockey_${i}`] = rr?.jockey_name || null;
+          row[`odds_${i}`] = rr?.odds || null;
+        }
+
+        sheet.addRow(row).commit();
+      });
     }
 
     await workbook.commit();
